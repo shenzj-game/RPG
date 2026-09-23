@@ -3,6 +3,8 @@
 
 #include "Character/RPGCharacter.h"
 
+#include "Player/RPGPlayerState.h"
+#include "AbilitySystem/RPGAbilitySystemComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 ARPGCharacter::ARPGCharacter()
@@ -16,4 +18,29 @@ ARPGCharacter::ARPGCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
+}
+
+void ARPGCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// Init ability actor info for the Server
+	InitAbilityActorInfo();
+}
+
+void ARPGCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// Init ability actor info for the Client
+	InitAbilityActorInfo();
+}
+
+void ARPGCharacter::InitAbilityActorInfo()
+{
+	ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
+	check(RPGPlayerState);
+	RPGPlayerState->GetAbilitySystemComponent()->InitAbilityActorInfo(RPGPlayerState, this);
+	AbilitySystemComponent = RPGPlayerState->GetAbilitySystemComponent();
+	AttributeSet = RPGPlayerState->GetAttributeSet();
 }
