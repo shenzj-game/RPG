@@ -24,3 +24,8 @@ void ARPGCharacterBase::BeginPlay()
 	
 }
 
+void ARPGCharacterBase::InitAbilityActorInfo()
+{
+
+}
+
