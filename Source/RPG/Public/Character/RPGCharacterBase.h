@@ -5,13 +5,15 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
+#include "Interaction/CombatInterface.h"
 #include "RPGCharacterBase.generated.h"
 
 class UAbilitySystemComponent;
 class UAttributeSet;
+class UGameplayEffect;
 
 UCLASS(Abstract)
-class RPG_API ARPGCharacterBase : public ACharacter, public IAbilitySystemInterface
+class RPG_API ARPGCharacterBase : public ACharacter, public IAbilitySystemInterface, public ICombatInterface
 {
 	GENERATED_BODY()
 
@@ -33,5 +35,17 @@ protected:
 	TObjectPtr<UAttributeSet> AttributeSet;
 
 	virtual void InitAbilityActorInfo();
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Attributes")
+	TSubclassOf<UGameplayEffect> DefaultPrimaryAttributes;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Attributes")
+	TSubclassOf<UGameplayEffect> DefaultSecondaryAttributes;
+	
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Attributes")
+	TSubclassOf<UGameplayEffect> DefaultVitalAttributes;
+
+	void ApplyEffectToSelf(TSubclassOf<UGameplayEffect> GameplayEffectClass, float Level) const;
+	void InitializeDefaultAttributes() const;
 
 };
