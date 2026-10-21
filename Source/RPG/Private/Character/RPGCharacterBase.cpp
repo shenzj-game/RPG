@@ -4,6 +4,7 @@
 #include "Character/RPGCharacterBase.h"
 
 #include "AbilitySystemComponent.h"
+#include "AbilitySystem/RPGAbilitySystemComponent.h"
 
 ARPGCharacterBase::ARPGCharacterBase()
 {
@@ -26,6 +27,12 @@ void ARPGCharacterBase::BeginPlay()
 	
 }
 
+FVector ARPGCharacterBase::GetCombatSocketLocation()
+{
+	check(Weapon);
+	return Weapon->GetSocketLocation(WeaponTipSocketName);
+}
+
 void ARPGCharacterBase::InitAbilityActorInfo()
 {
 
@@ -46,5 +53,13 @@ void ARPGCharacterBase::InitializeDefaultAttributes() const
 	ApplyEffectToSelf(DefaultPrimaryAttributes, 1.f);
 	ApplyEffectToSelf(DefaultSecondaryAttributes, 1.f);
 	ApplyEffectToSelf(DefaultVitalAttributes, 1.f);
+}
+
+void ARPGCharacterBase::AddCharacterAbilities()
+{
+	if (!HasAuthority()) return;
+	
+	URPGAbilitySystemComponent* RPGASC = CastChecked<URPGAbilitySystemComponent>(AbilitySystemComponent);
+	RPGASC->AddCharacterAbilities(StartupAbilities);
 }
 
