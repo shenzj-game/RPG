@@ -4,6 +4,7 @@
 #include "Character/RPGEnemy.h"
 
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
+#include "AbilitySystem/RPGAbilitySystemLibrary.h"
 #include "AbilitySystem/RPGAttributeSet.h"
 #include "Components/WidgetComponent.h"
 #include "RPG/RPG.h"
@@ -80,4 +81,10 @@ void ARPGEnemy::InitAbilityActorInfo()
 	Cast<URPGAbilitySystemComponent>(AbilitySystemComponent)->AbilityActorInfoSet();
 	
 	InitializeDefaultAttributes();
+}
+
+void ARPGEnemy::InitializeDefaultAttributes() const
+{
+	URPGAbilitySystemLibrary::InitializeDefaultAttributes(this, CharacterClass, Level, AbilitySystemComponent);
+	
 }
