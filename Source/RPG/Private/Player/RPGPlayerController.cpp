@@ -71,7 +71,19 @@ void ARPGPlayerController::SetupInputComponent()
 	URPGInputComponent* RPGInputComponent = CastChecked<URPGInputComponent>(InputComponent);
 
 	RPGInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ARPGPlayerController::Move);
+	RPGInputComponent->BindAction(ShiftAction, ETriggerEvent::Started, this, &ARPGPlayerController::ShiftPressed);
+	RPGInputComponent->BindAction(ShiftAction, ETriggerEvent::Completed, this, &ARPGPlayerController::ShiftReleased);
 	RPGInputComponent->BindAbilityActions(InputConfig, this, &ThisClass::AbilityInputTagPressed, &ThisClass::AbilityInputTagReleased, &ThisClass::AbilityInputTagHeld);
+}
+
+void ARPGPlayerController::ShiftPressed()
+{
+	bShiftKeyDown = true;
+}
+
+void ARPGPlayerController::ShiftReleased()
+{
+	bShiftKeyDown = false;
 }
 
 void ARPGPlayerController::Move(const FInputActionValue& InputActionValue)
@@ -122,11 +134,9 @@ void ARPGPlayerController::AbilityInputTagReleased(FGameplayTag InputTag)
 		return;
 	}
 	
-	if (bTargeting)
-	{
-		if (GetASC()) GetASC()->AbilityInputTagReleased(InputTag);
-	}
-	else
+	if (GetASC()) GetASC()->AbilityInputTagReleased(InputTag);
+	
+	if (!bTargeting && !bShiftKeyDown)
 	{
 		const APawn* ControlledPawn = GetPawn();
 		if (FollowTime <= ShortPressThreshold && ControlledPawn)
@@ -155,7 +165,7 @@ void ARPGPlayerController::AbilityInputTagHeld(FGameplayTag InputTag)
 		return;
 	}
 	
-	if (bTargeting)
+	if (bTargeting || bShiftKeyDown)
 	{
 		if (GetASC()) GetASC()->AbilityInputTagHeld(InputTag);
 	}

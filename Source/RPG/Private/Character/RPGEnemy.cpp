@@ -5,7 +5,9 @@
 
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
 #include "AbilitySystem/RPGAttributeSet.h"
+#include "Components/WidgetComponent.h"
 #include "RPG/RPG.h"
+#include "UI/Widget/RPGUserWidget.h"
 
 
 ARPGEnemy::ARPGEnemy()
@@ -21,6 +23,8 @@ ARPGEnemy::ARPGEnemy()
 	
 	AttributeSet = CreateDefaultSubobject<URPGAttributeSet>("AttributeSet");
 	
+	HealthBar = CreateDefaultSubobject<UWidgetComponent>("HealthBar");
+	HealthBar->SetupAttachment(GetRootComponent());
 }
 
 void ARPGEnemy::HighlightActor()
@@ -43,13 +47,37 @@ int32 ARPGEnemy::GetPlayerLevel()
 void ARPGEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-
 	InitAbilityActorInfo();
 
+	if (URPGUserWidget* RPGUserWidget = Cast<URPGUserWidget>(HealthBar->GetUserWidgetObject()))
+	{
+		RPGUserWidget->SetWidgetController(this);
+	}
+	
+	if (const URPGAttributeSet* RPGAS = Cast<URPGAttributeSet>(AttributeSet))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(RPGAS->GetHealthAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnHealthChanged.Broadcast(Data.NewValue);
+			}
+		);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(RPGAS->GetMaxHealthAttribute()).AddLambda(
+			[this](const FOnAttributeChangeData& Data)
+			{
+				OnMaxHealthChanged.Broadcast(Data.NewValue);
+			}
+		);
+		OnHealthChanged.Broadcast(RPGAS->GetHealth());
+		OnMaxHealthChanged.Broadcast(RPGAS->GetMaxHealth());
+	}
+	
 }
 
 void ARPGEnemy::InitAbilityActorInfo()
 {
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	Cast<URPGAbilitySystemComponent>(AbilitySystemComponent)->AbilityActorInfoSet();
+	
+	InitializeDefaultAttributes();
 }
