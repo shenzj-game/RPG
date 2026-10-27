@@ -3,10 +3,12 @@
 
 #include "Character/RPGEnemy.h"
 
+#include "RPGGameplayTags.h"
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
 #include "AbilitySystem/RPGAbilitySystemLibrary.h"
 #include "AbilitySystem/RPGAttributeSet.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "RPG/RPG.h"
 #include "UI/Widget/RPGUserWidget.h"
 
@@ -45,10 +47,18 @@ int32 ARPGEnemy::GetPlayerLevel()
 	return Level;
 }
 
+void ARPGEnemy::Die()
+{
+	SetLifeSpan(LifeSpan);
+	Super::Die();
+}
+
 void ARPGEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+	GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
 	InitAbilityActorInfo();
+	URPGAbilitySystemLibrary::GiveStartupAbilities(this, AbilitySystemComponent);
 
 	if (URPGUserWidget* RPGUserWidget = Cast<URPGUserWidget>(HealthBar->GetUserWidgetObject()))
 	{
@@ -69,9 +79,22 @@ void ARPGEnemy::BeginPlay()
 				OnMaxHealthChanged.Broadcast(Data.NewValue);
 			}
 		);
+		
+		AbilitySystemComponent->RegisterGameplayTagEvent(FRPGGameplayTags::Get().Effects_HitReact, EGameplayTagEventType::NewOrRemoved).AddUObject(
+			this,
+			&ARPGEnemy::HitReactTagChanged
+		);
+		
 		OnHealthChanged.Broadcast(RPGAS->GetHealth());
 		OnMaxHealthChanged.Broadcast(RPGAS->GetMaxHealth());
 	}
+	
+}
+
+void ARPGEnemy::HitReactTagChanged(const FGameplayTag CallbackTag, int32 NewCount)
+{
+	bHitReacting = NewCount > 0;
+	GetCharacterMovement()->MaxWalkSpeed = bHitReacting ? 0.f : BaseWalkSpeed;
 	
 }
 

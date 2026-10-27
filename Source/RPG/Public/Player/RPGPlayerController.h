@@ -7,6 +7,7 @@
 #include "GameplayTagContainer.h"
 #include "RPGPlayerController.generated.h"
 
+class UDamageTextComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
@@ -26,6 +27,9 @@ class RPG_API ARPGPlayerController : public APlayerController
 public:
 	ARPGPlayerController();
 	virtual void PlayerTick(float DeltaTime) override;
+	
+	UFUNCTION(Client, Reliable)
+	void ShowDamageNumber(float DamageAmount, ACharacter* TargetCharacter);
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -76,4 +80,7 @@ private:
 	TObjectPtr<USplineComponent> Spline;
 	
 	void AutoRun();
+	
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UDamageTextComponent> DamageTextComponentClass;
 };
