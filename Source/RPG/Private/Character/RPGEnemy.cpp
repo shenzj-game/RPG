@@ -7,6 +7,9 @@
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
 #include "AbilitySystem/RPGAbilitySystemLibrary.h"
 #include "AbilitySystem/RPGAttributeSet.h"
+#include "AI/RPGAIController.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "RPG/RPG.h"
@@ -24,10 +27,28 @@ ARPGEnemy::ARPGEnemy()
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 	
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	
 	AttributeSet = CreateDefaultSubobject<URPGAttributeSet>("AttributeSet");
 	
 	HealthBar = CreateDefaultSubobject<UWidgetComponent>("HealthBar");
 	HealthBar->SetupAttachment(GetRootComponent());
+}
+
+void ARPGEnemy::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	if (!HasAuthority()) return;
+	RPGAIController = Cast<ARPGAIController>(NewController);
+	RPGAIController->GetBlackboardComponent()->InitializeBlackboard(*BehaviorTree->BlackboardAsset);
+	RPGAIController->RunBehaviorTree(BehaviorTree);
+	RPGAIController->GetBlackboardComponent()->SetValueAsBool(FName("HitReacting"), false);
+	RPGAIController->GetBlackboardComponent()->SetValueAsBool(FName("RangedAttacker"), CharacterClass != ECharacterClass::Warrior);
+
 }
 
 void ARPGEnemy::HighlightActor()
@@ -98,7 +119,7 @@ void ARPGEnemy::HitReactTagChanged(const FGameplayTag CallbackTag, int32 NewCoun
 {
 	bHitReacting = NewCount > 0;
 	GetCharacterMovement()->MaxWalkSpeed = bHitReacting ? 0.f : BaseWalkSpeed;
-	
+	RPGAIController->GetBlackboardComponent()->SetValueAsBool(FName("HitReacting"), bHitReacting);
 }
 
 void ARPGEnemy::InitAbilityActorInfo()
