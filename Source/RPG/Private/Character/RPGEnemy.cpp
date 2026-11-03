@@ -74,6 +74,16 @@ void ARPGEnemy::Die()
 	Super::Die();
 }
 
+void ARPGEnemy::SetCombatTarget_Implementation(AActor* InCombatTarget)
+{
+	CombatTarget = InCombatTarget;
+}
+
+AActor* ARPGEnemy::GetCombatTarget_Implementation() const
+{
+	return CombatTarget;
+}
+
 void ARPGEnemy::BeginPlay()
 {
 	Super::BeginPlay();
@@ -81,7 +91,7 @@ void ARPGEnemy::BeginPlay()
 	InitAbilityActorInfo();
 	if (HasAuthority())
 	{
-		URPGAbilitySystemLibrary::GiveStartupAbilities(this, AbilitySystemComponent);
+		URPGAbilitySystemLibrary::GiveStartupAbilities(this, AbilitySystemComponent, CharacterClass);
 	}
 	
 	if (URPGUserWidget* RPGUserWidget = Cast<URPGUserWidget>(HealthBar->GetUserWidgetObject()))
@@ -119,7 +129,10 @@ void ARPGEnemy::HitReactTagChanged(const FGameplayTag CallbackTag, int32 NewCoun
 {
 	bHitReacting = NewCount > 0;
 	GetCharacterMovement()->MaxWalkSpeed = bHitReacting ? 0.f : BaseWalkSpeed;
-	RPGAIController->GetBlackboardComponent()->SetValueAsBool(FName("HitReacting"), bHitReacting);
+	if (RPGAIController && RPGAIController->GetBlackboardComponent())
+	{
+		RPGAIController->GetBlackboardComponent()->SetValueAsBool(FName("HitReacting"), bHitReacting);
+	}
 }
 
 void ARPGEnemy::InitAbilityActorInfo()
