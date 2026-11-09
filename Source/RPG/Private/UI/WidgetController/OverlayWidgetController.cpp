@@ -5,6 +5,7 @@
 
 #include "AbilitySystem/RPGAttributeSet.h"
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
 
 void UOverlayWidgetController::BroadcastInitialValues()
 {
@@ -51,21 +52,47 @@ void UOverlayWidgetController::BindCallbacksToDependencies()
 				OnMaxManaChanged.Broadcast(Data.NewValue);
 			}
 		);
-
-	Cast<URPGAbilitySystemComponent>(AbilitySystemComponent)->EffectAssetTags.AddLambda(
-		[this](const FGameplayTagContainer& AssetTags)
+	
+	if (URPGAbilitySystemComponent* RPGASC = Cast<URPGAbilitySystemComponent>(AbilitySystemComponent))
+	{
+		if (RPGASC->bStartupAbilitiesGiven)
 		{
-			for (const FGameplayTag& Tag : AssetTags)
+			OnInitializeStartupAbilities(RPGASC);
+		}
+		else
+		{
+			RPGASC->AbilitiesGivenDelegate.AddUObject(this, &UOverlayWidgetController::OnInitializeStartupAbilities);
+		}
+
+		RPGASC->EffectAssetTags.AddLambda(
+			[this](const FGameplayTagContainer& AssetTags)
 			{
-				// For example, say that Tag = Message.HealthPotion
-				// "Message.HealthPotion".MatchesTag("Message") will return True, "Message".MatchesTag("Message.HealthPotion") will return False
-				FGameplayTag MessageTag = FGameplayTag::RequestGameplayTag(FName("Message"));
-				if (Tag.MatchesTag(MessageTag))
+				for (const FGameplayTag& Tag : AssetTags)
 				{
-					const FUIWidgetRow* Row = GetDataTableRowByTag<FUIWidgetRow>(MessageDataTable, Tag);
-					MessageWidgetRowDelegate.Broadcast(*Row);
+					// For example, say that Tag = Message.HealthPotion
+					// "Message.HealthPotion".MatchesTag("Message") will return True, "Message".MatchesTag("Message.HealthPotion") will return False
+					FGameplayTag MessageTag = FGameplayTag::RequestGameplayTag(FName("Message"));
+					if (Tag.MatchesTag(MessageTag))
+					{
+						const FUIWidgetRow* Row = GetDataTableRowByTag<FUIWidgetRow>(MessageDataTable, Tag);
+						MessageWidgetRowDelegate.Broadcast(*Row);
+					}
 				}
 			}
-		}
-	);
+		);
+	}
+}
+
+void UOverlayWidgetController::OnInitializeStartupAbilities(URPGAbilitySystemComponent* RPGAbilitySystemComponent)
+{
+	if (!RPGAbilitySystemComponent->bStartupAbilitiesGiven) return;
+	
+	FForEachAbility BroadcastDelegate;
+	BroadcastDelegate.BindLambda([this, RPGAbilitySystemComponent](const FGameplayAbilitySpec& AbilitySpec)
+	{
+		FRPGAbilityInfo Info = AbilityInfo->FindAbilityInfoByTag(RPGAbilitySystemComponent->GetAbilityTagFromSpec(AbilitySpec));
+		Info.InputTag = RPGAbilitySystemComponent->GetInputTagFromSpec(AbilitySpec);
+		AbilityInfoDelegate.Broadcast(Info);
+	});
+	RPGAbilitySystemComponent->ForEachAbility(BroadcastDelegate);
 }
