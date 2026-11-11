@@ -3,8 +3,10 @@
 
 #include "UI/WidgetController/AttributeMenuWidgetController.h"
 
+#include "AbilitySystem/RPGAbilitySystemComponent.h"
 #include "AbilitySystem/RPGAttributeSet.h"
 #include "AbilitySystem/Data/AttributeInfo.h"
+#include "Player/RPGPlayerState.h"
 
 void UAttributeMenuWidgetController::BindCallbacksToDependencies()
 {
@@ -20,6 +22,14 @@ void UAttributeMenuWidgetController::BindCallbacksToDependencies()
 			}	
 		);
 	}
+	
+	ARPGPlayerState* RPGPlayerState = CastChecked<ARPGPlayerState>(PlayerState);
+	RPGPlayerState->OnAttributePointsChangedDelegate.AddLambda(
+		[this](int32 Points)
+		{
+			AttributePointsChangedDelegate.Broadcast(Points);
+		}
+	);
 }
 
 void UAttributeMenuWidgetController::BroadcastInitialValues()
@@ -31,6 +41,15 @@ void UAttributeMenuWidgetController::BroadcastInitialValues()
 	{
 		BroadcastAttributeInfo(Pair.Key, Pair.Value());
 	}
+	
+	ARPGPlayerState* RPGPlayerState = CastChecked<ARPGPlayerState>(PlayerState);
+	AttributePointsChangedDelegate.Broadcast(RPGPlayerState->GetAttributePoints());
+}
+
+void UAttributeMenuWidgetController::UpgradeAttribute(const FGameplayTag& AttributeTag)
+{
+	URPGAbilitySystemComponent* RPGASC = CastChecked<URPGAbilitySystemComponent>(AbilitySystemComponent);
+	RPGASC->UpgradeAttribute(AttributeTag);
 }
 
 void UAttributeMenuWidgetController::BroadcastAttributeInfo(const FGameplayTag& AttributeTag, const FGameplayAttribute& Attribute) const

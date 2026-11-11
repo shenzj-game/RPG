@@ -85,6 +85,20 @@ int32 ARPGCharacter::GetSpellPointsReward_Implementation(int32 Level) const
 	return RPGPlayerState->LevelUpInfo->LevelUpInformation[Level].SpellPointAward;
 }
 
+int32 ARPGCharacter::GetAttributePoints_Implementation() const
+{
+	const ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
+	check(RPGPlayerState);
+	return RPGPlayerState->GetAttributePoints();
+}
+
+int32 ARPGCharacter::GetSpellPoints_Implementation() const
+{
+	const ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
+	check(RPGPlayerState);
+	return RPGPlayerState->GetSpellPoints();
+}
+
 void ARPGCharacter::AddToXP_Implementation(int32 InXP)
 {
 	ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
@@ -101,12 +115,16 @@ void ARPGCharacter::AddToPlayerLevel_Implementation(int32 InPlayerLevel)
 
 void ARPGCharacter::AddToAttributePoints_Implementation(int32 InAttributePoints)
 {
-	
+	ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
+	check(RPGPlayerState);
+	RPGPlayerState->AddToAttributePoints(InAttributePoints);
 }
 
 void ARPGCharacter::AddToSpellPoints_Implementation(int32 InSpellPoints)
 {
-	
+	ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
+	check(RPGPlayerState);
+	RPGPlayerState->AddToSpellPoints(InSpellPoints);
 }
 
 void ARPGCharacter::LevelUp_Implementation()
