@@ -125,6 +125,11 @@ void ARPGCharacterBase::IncremenetMinionCount_Implementation(int32 Amount)
 	MinionCount += Amount;
 }
 
+ECharacterClass ARPGCharacterBase::GetCharacterClass_Implementation()
+{
+	return CharacterClass;
+}
+
 void ARPGCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -159,6 +164,7 @@ void ARPGCharacterBase::AddCharacterAbilities()
 	
 	URPGAbilitySystemComponent* RPGASC = CastChecked<URPGAbilitySystemComponent>(AbilitySystemComponent);
 	RPGASC->AddCharacterAbilities(StartupAbilities);
+	RPGASC->AddCharacterPassiveAbilities(StartupPassiveAbilities);
 }
 
 void ARPGCharacterBase::Dissolve()
