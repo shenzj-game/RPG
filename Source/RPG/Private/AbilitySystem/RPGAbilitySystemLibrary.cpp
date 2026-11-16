@@ -12,34 +12,55 @@
 #include "UI/HUD/RPGHUD.h"
 #include "UI/WidgetController/RPGWidgetController.h"
 
-UOverlayWidgetController* URPGAbilitySystemLibrary::GetOverlayWidgetController(const UObject* WorldContextObject)
+bool URPGAbilitySystemLibrary::MakeWidgetControllerParams(const UObject* WorldContextObject, FWidgetControllerParams& OutWCParams, ARPGHUD*& OutRPGHUD)
 {
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(WorldContextObject, 0))
 	{
-		if (ARPGHUD* RPGHUD = Cast<ARPGHUD>(PC->GetHUD()))
+		OutRPGHUD = Cast<ARPGHUD>(PC->GetHUD());
+		if (OutRPGHUD)
 		{
 			ARPGPlayerState* PS = PC->GetPlayerState<ARPGPlayerState>();
 			UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
 			UAttributeSet* AS = PS->GetAttributeSet();
-			const FWidgetControllerParams WidgetControllerParams(PC, PS, ASC, AS);
-			return RPGHUD->GetOverlayWidgetController(WidgetControllerParams);
+			OutWCParams.PlayerController = PC;
+			OutWCParams.PlayerState = PS;
+			OutWCParams.AbilitySystemComponent = ASC;
+			OutWCParams.AttributeSet = AS;
+			return true;
 		}
+	}
+	return false;
+}
+
+UOverlayWidgetController* URPGAbilitySystemLibrary::GetOverlayWidgetController(const UObject* WorldContextObject)
+{
+	FWidgetControllerParams WCParams;
+	ARPGHUD* RPGHUD = nullptr;
+	if (MakeWidgetControllerParams(WorldContextObject, WCParams, RPGHUD))
+	{
+		return RPGHUD->GetOverlayWidgetController(WCParams);
 	}
 	return nullptr;
 }
 
 UAttributeMenuWidgetController* URPGAbilitySystemLibrary::GetAttributeMenuWidgetController(const UObject* WorldContextObject)
 {
-	if (APlayerController* PC = UGameplayStatics::GetPlayerController(WorldContextObject, 0))
+	FWidgetControllerParams WCParams;
+	ARPGHUD* RPGHUD = nullptr;
+	if (MakeWidgetControllerParams(WorldContextObject, WCParams, RPGHUD))
 	{
-		if (ARPGHUD* RPGHUD = Cast<ARPGHUD>(PC->GetHUD()))
-		{
-			ARPGPlayerState* PS = PC->GetPlayerState<ARPGPlayerState>();
-			UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
-			UAttributeSet* AS = PS->GetAttributeSet();
-			const FWidgetControllerParams WidgetControllerParams(PC, PS, ASC, AS);
-			return RPGHUD->GetAttributeMenuWidgetController(WidgetControllerParams);
-		}
+		return RPGHUD->GetAttributeMenuWidgetController(WCParams);
+	}
+	return nullptr;
+}
+
+USpellMenuWidgetController* URPGAbilitySystemLibrary::GetSpellMenuWidgetController(const UObject* WorldContextObject)
+{
+	FWidgetControllerParams WCParams;
+	ARPGHUD* RPGHUD = nullptr;
+	if (MakeWidgetControllerParams(WorldContextObject, WCParams, RPGHUD))
+	{
+		return RPGHUD->GetSpellMenuWidgetController(WCParams);
 	}
 	return nullptr;
 }
@@ -104,6 +125,13 @@ UCharacterClassInfo* URPGAbilitySystemLibrary::GetCharacterClassInfo(const UObje
 	const ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(WorldContextObject));
 	if (RPGGameMode == nullptr) return nullptr;
 	return RPGGameMode->CharacterClassInfo;
+}
+
+UAbilityInfo* URPGAbilitySystemLibrary::GetAbilityInfo(const UObject* WorldContextObject)
+{
+	const ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(WorldContextObject));
+	if (RPGGameMode == nullptr) return nullptr;
+	return RPGGameMode->AbilityInfo;
 }
 
 bool URPGAbilitySystemLibrary::IsBlockedHit(const FGameplayEffectContextHandle& EffectContextHandle)

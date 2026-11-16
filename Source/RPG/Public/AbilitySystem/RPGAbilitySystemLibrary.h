@@ -7,6 +7,10 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "RPGAbilitySystemLibrary.generated.h"
 
+class UAbilityInfo;
+class ARPGHUD;
+struct FWidgetControllerParams;
+class USpellMenuWidgetController;
 struct FGameplayEffectContextHandle;
 class UAbilitySystemComponent;
 class UAttributeMenuWidgetController;
@@ -20,11 +24,17 @@ class RPG_API URPGAbilitySystemLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 	
 public:
-	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|WidgetController")
+	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|WidgetController", meta = (DefaultToSelf = "WorldContextObject"))
+	static bool MakeWidgetControllerParams(const UObject* WorldContextObject, FWidgetControllerParams& OutWCParams, ARPGHUD*& OutRPGHUD);
+	
+	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|WidgetController", meta = (DefaultToSelf = "WorldContextObject"))
 	static UOverlayWidgetController* GetOverlayWidgetController(const UObject* WorldContextObject);
 	
-	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|WidgetController")
+	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|WidgetController", meta = (DefaultToSelf = "WorldContextObject"))
 	static UAttributeMenuWidgetController* GetAttributeMenuWidgetController(const UObject* WorldContextObject);
+	
+	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|WidgetController", meta = (DefaultToSelf = "WorldContextObject"))
+	static USpellMenuWidgetController* GetSpellMenuWidgetController(const UObject* WorldContextObject);
 	
 	UFUNCTION(BlueprintCallable, Category="RPGAbilitySystemLibrary|CharacterClassDefaults")
 	static void InitializeDefaultAttributes(const UObject* WorldContextObject, ECharacterClass CharacterClass, float Level, UAbilitySystemComponent* ASC);
@@ -34,6 +44,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="RPGAbilitySystemLibrary|CharacterClassDefaults")
 	static UCharacterClassInfo* GetCharacterClassInfo(const UObject* WorldContextObject);
+	
+	UFUNCTION(BlueprintCallable, Category="RPGAbilitySystemLibrary|CharacterClassDefaults")
+	static UAbilityInfo* GetAbilityInfo(const UObject* WorldContextObject);
 	
 	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|GameplayEffects")
 	static bool IsBlockedHit(const FGameplayEffectContextHandle& EffectContextHandle);
@@ -52,7 +65,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="RPGAbilitySystemLibrary|GameplayMechanics")
 	static bool IsNotFriend(AActor* FirstActor, AActor* SecondActor);
-	
 	
 	static int32 GetXPRewardForClassAndLevel(const UObject* WorldContextObject, ECharacterClass CharacterClass, int32 CharacterLevel);
 };

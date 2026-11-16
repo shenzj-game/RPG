@@ -7,10 +7,16 @@
 #include "UObject/NoExportTypes.h"
 #include "RPGWidgetController.generated.h"
 
+class UAbilityInfo;
+class URPGAttributeSet;
+class URPGAbilitySystemComponent;
+class ARPGPlayerState;
+class ARPGPlayerController;
 class UAttributeSet;
 class UAbilitySystemComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerStatChangedSignature, int32, NewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityInfoSignature, const FRPGAbilityInfo&, Info);
 
 USTRUCT(BlueprintType)
 struct FWidgetControllerParams
@@ -49,7 +55,14 @@ public:
 	virtual void BroadcastInitialValues();
 	virtual void BindCallbacksToDependencies();
 
+	UPROPERTY(BlueprintAssignable, Category = "GAS|Messages")
+	FAbilityInfoSignature AbilityInfoDelegate;
+	
+	void BroadcastAbilityInfo();
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Widget Data")
+	TObjectPtr<UAbilityInfo> AbilityInfo;
+	
 	UPROPERTY(BlueprintReadOnly, Category = "WidgetContorller")
 	TObjectPtr<APlayerController> PlayerController;
 
@@ -61,4 +74,22 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "WidgetContorller")
 	TObjectPtr<UAttributeSet> AttributeSet;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetContorller")
+	TObjectPtr<ARPGPlayerController> RPGPlayerController;
+
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetContorller")
+	TObjectPtr<ARPGPlayerState> RPGPlayerState;
+
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetContorller")
+	TObjectPtr<URPGAbilitySystemComponent> RPGAbilitySystemComponent;
+
+	UPROPERTY(BlueprintReadOnly, Category = "WidgetContorller")
+	TObjectPtr<URPGAttributeSet> RPGAttributeSet;
+	
+	ARPGPlayerController* GetRPGPC();
+	ARPGPlayerState* GetRPGPS();
+	URPGAbilitySystemComponent* GetRPGASC();
+	URPGAttributeSet* GetRPGAS();
+	
 };

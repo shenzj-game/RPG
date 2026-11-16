@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "RPGGameModeBase.generated.h"
 
+class UAbilityInfo;
 class UCharacterClassInfo;
 /**
  * 
@@ -18,4 +19,7 @@ class RPG_API ARPGGameModeBase : public AGameModeBase
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Character Class Defaults")
 	TObjectPtr<UCharacterClassInfo>  CharacterClassInfo;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Ability Info")
+	TObjectPtr<UAbilityInfo>  AbilityInfo;
 };

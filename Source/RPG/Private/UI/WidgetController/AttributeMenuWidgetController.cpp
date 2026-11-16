@@ -10,10 +10,9 @@
 
 void UAttributeMenuWidgetController::BindCallbacksToDependencies()
 {
-	URPGAttributeSet* AS = CastChecked<URPGAttributeSet>(AttributeSet);
 	check(AttributeInfo);
 	
-	for (auto Pair : AS->TagsToAttributes)
+	for (auto Pair : GetRPGAS()->TagsToAttributes)
 	{
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(Pair.Value()).AddLambda(
 			[this, Pair](const FOnAttributeChangeData& Data)
@@ -23,8 +22,7 @@ void UAttributeMenuWidgetController::BindCallbacksToDependencies()
 		);
 	}
 	
-	ARPGPlayerState* RPGPlayerState = CastChecked<ARPGPlayerState>(PlayerState);
-	RPGPlayerState->OnAttributePointsChangedDelegate.AddLambda(
+	GetRPGPS()->OnAttributePointsChangedDelegate.AddLambda(
 		[this](int32 Points)
 		{
 			AttributePointsChangedDelegate.Broadcast(Points);
@@ -42,8 +40,7 @@ void UAttributeMenuWidgetController::BroadcastInitialValues()
 		BroadcastAttributeInfo(Pair.Key, Pair.Value());
 	}
 	
-	ARPGPlayerState* RPGPlayerState = CastChecked<ARPGPlayerState>(PlayerState);
-	AttributePointsChangedDelegate.Broadcast(RPGPlayerState->GetAttributePoints());
+	AttributePointsChangedDelegate.Broadcast(GetRPGPS()->GetAttributePoints());
 }
 
 void UAttributeMenuWidgetController::UpgradeAttribute(const FGameplayTag& AttributeTag)
