@@ -165,6 +165,7 @@ void ARPGCharacter::InitAbilityActorInfo()
 	Cast<URPGAbilitySystemComponent>(RPGPlayerState->GetAbilitySystemComponent())->AbilityActorInfoSet();
 	AbilitySystemComponent = RPGPlayerState->GetAbilitySystemComponent();
 	AttributeSet = RPGPlayerState->GetAttributeSet();
+	OnASCRegistered.Broadcast(AbilitySystemComponent);
 
 	if (ARPGPlayerController* RPGPlayerController = Cast<ARPGPlayerController>(GetController()))
 	{
