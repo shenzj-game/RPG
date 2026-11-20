@@ -44,10 +44,38 @@ void URPGAbilitySystemComponent::AddCharacterPassiveAbilities(const TArray<TSubc
 	}
 }
 
+void URPGAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& InputTag)
+{
+	if (!InputTag.IsValid()) return;
+	FScopedAbilityListLock ActiveScopeLoc(*this);
+	for (FGameplayAbilitySpec& AbilitySpec : GetActivatableAbilities())
+	{
+		if (AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag))
+		{
+			AbilitySpecInputPressed(AbilitySpec);
+			if (AbilitySpec.IsActive())
+			{
+				// InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, AbilitySpec.Handle, AbilitySpec.ActivationInfo.GetActivationPredictionKey());
+				TArray<UGameplayAbility*> Instances = AbilitySpec.GetAbilityInstances();
+				if (Instances.Num() > 0)
+				{
+					const FGameplayAbilityActivationInfo& ActivationInfo = Instances.Last()->GetCurrentActivationInfoRef();
+					FPredictionKey OriginalPredictionKey = ActivationInfo.GetActivationPredictionKey();
+                    
+					// 使用新的预测键触发事件
+					InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputPressed, 
+										  AbilitySpec.Handle, 
+										  OriginalPredictionKey);
+				}
+			}
+		}
+	}
+}
+
 void URPGAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& InputTag)
 {
 	if (!InputTag.IsValid()) return;
-	
+	FScopedAbilityListLock ActiveScopeLoc(*this);
 	for (FGameplayAbilitySpec& AbilitySpec : GetActivatableAbilities())
 	{
 		if (AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag))
@@ -64,12 +92,24 @@ void URPGAbilitySystemComponent::AbilityInputTagHeld(const FGameplayTag& InputTa
 void URPGAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& InputTag)
 {
 	if (!InputTag.IsValid()) return;
-	
+	FScopedAbilityListLock ActiveScopeLoc(*this);
 	for (FGameplayAbilitySpec& AbilitySpec : GetActivatableAbilities())
 	{
-		if (AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag))
+		if (AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag) && AbilitySpec.IsActive())
 		{
 			AbilitySpecInputReleased(AbilitySpec);
+			// InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, AbilitySpec.Handle, AbilitySpec.ActivationInfo.GetActivationPredictionKey());
+			TArray<UGameplayAbility*> Instances = AbilitySpec.GetAbilityInstances();
+			if (Instances.Num() > 0)
+			{
+				const FGameplayAbilityActivationInfo& ActivationInfo = Instances.Last()->GetCurrentActivationInfoRef();
+				FPredictionKey OriginalPredictionKey = ActivationInfo.GetActivationPredictionKey();
+                    
+				// 使用新的预测键触发事件
+				InvokeReplicatedEvent(EAbilityGenericReplicatedEvent::InputReleased, 
+									  AbilitySpec.Handle, 
+									  OriginalPredictionKey);
+			}
 		}
 	}
 }

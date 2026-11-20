@@ -4,11 +4,13 @@
 #include "Character/RPGCharacter.h"
 
 #include "NiagaraComponent.h"
+#include "RPGGameplayTags.h"
 #include "Player/RPGPlayerState.h"
 #include "Player/RPGPlayerController.h"
 #include "UI/HUD/RPGHUD.h"
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
 #include "AbilitySystem/Data/LevelUpInfo.h"
+#include "AbilitySystem/Debuff/DebuffNiagaraComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -157,6 +159,42 @@ int32 ARPGCharacter::GetPlayerLevel_Implementation()
 	return RPGPlayerState->GetPlayerLevel();
 }
 
+void ARPGCharacter::OnRep_Stunned()
+{
+	if (URPGAbilitySystemComponent* RPGASC = Cast<URPGAbilitySystemComponent>(AbilitySystemComponent))
+	{
+		const FRPGGameplayTags& GameplayTags = FRPGGameplayTags::Get();
+		
+		FGameplayTagContainer BlockedTags;
+		BlockedTags.AddTag(GameplayTags.Player_Block_CursorTrace);
+		BlockedTags.AddTag(GameplayTags.Player_Block_InputHeld);
+		BlockedTags.AddTag(GameplayTags.Player_Block_InputPressed);
+		BlockedTags.AddTag(GameplayTags.Player_Block_InputReleased);
+		if (bIsStunned)
+		{
+			RPGASC->AddLooseGameplayTags(BlockedTags);
+			StunDebuffComponent->Activate();
+		}
+		else
+		{
+			RPGASC->RemoveLooseGameplayTags(BlockedTags);
+			StunDebuffComponent->Deactivate();
+		}
+	}
+}
+
+void ARPGCharacter::OnRep_Burned()
+{
+	if (bIsBurned)
+	{
+		BurnDebuffComponent->Activate();
+	}
+	else
+	{
+		BurnDebuffComponent->Deactivate();
+	}
+}
+
 void ARPGCharacter::InitAbilityActorInfo()
 {
 	ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
@@ -166,6 +204,7 @@ void ARPGCharacter::InitAbilityActorInfo()
 	AbilitySystemComponent = RPGPlayerState->GetAbilitySystemComponent();
 	AttributeSet = RPGPlayerState->GetAttributeSet();
 	OnASCRegistered.Broadcast(AbilitySystemComponent);
+	AbilitySystemComponent->RegisterGameplayTagEvent(FRPGGameplayTags::Get().Debuff_Stun, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ARPGCharacter::StunTagChanged);
 
 	if (ARPGPlayerController* RPGPlayerController = Cast<ARPGPlayerController>(GetController()))
 	{
