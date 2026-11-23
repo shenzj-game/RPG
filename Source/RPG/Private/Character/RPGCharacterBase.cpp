@@ -64,6 +64,14 @@ void ARPGCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(ARPGCharacterBase, bIsBeingShocked);
 }
 
+float ARPGCharacterBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	const float DamageTaken = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	OnDamageDelegate.Broadcast(DamageTaken);
+	return DamageTaken;
+}
+
 UAbilitySystemComponent* ARPGCharacterBase::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
@@ -195,6 +203,11 @@ void ARPGCharacterBase::SetIsBeingShocked_Implementation(bool bInShock)
 bool ARPGCharacterBase::IsBeingShocked_Implementation() const
 {
 	return bIsBeingShocked;
+}
+
+FOnDamageSignature& ARPGCharacterBase::GetOnDamageDelegate()
+{
+	return OnDamageDelegate;
 }
 
 void ARPGCharacterBase::StunTagChanged(const FGameplayTag CallbackTag, int32 NewCount)

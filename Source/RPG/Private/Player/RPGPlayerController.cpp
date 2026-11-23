@@ -10,10 +10,13 @@
 #include "NiagaraFunctionLibrary.h"
 #include "RPGGameplayTags.h"
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
+#include "Actor/MagicCircle.h"
+#include "Components/DecalComponent.h"
 #include "Components/SplineComponent.h"
 #include "GameFramework/Character.h"
 #include "Input/RPGInputComponent.h"
 #include "Interaction/EnemyInterface.h"
+#include "RPG/RPG.h"
 #include "UI/Widget/DamageTextComponent.h"
 
 ARPGPlayerController::ARPGPlayerController()
@@ -27,6 +30,27 @@ void ARPGPlayerController::PlayerTick(float DeltaTime)
 	Super::PlayerTick(DeltaTime);
 	CursorTrace();
 	AutoRun();
+	UpdateMagicCircleLocation();
+}
+
+void ARPGPlayerController::ShowMagicCircle(UMaterialInterface* DecalMaterial)
+{
+	if (!IsValid(MagicCircle))
+	{
+		MagicCircle = GetWorld()->SpawnActor<AMagicCircle>(MagicCircleClass);
+		if (DecalMaterial)
+		{
+			MagicCircle->MagicCircleDecal->SetMaterial(0, DecalMaterial);
+		}
+	}
+}
+
+void ARPGPlayerController::HideMagicCircle()
+{
+	if (IsValid(MagicCircle))
+	{
+		MagicCircle->Destroy();
+	}
 }
 
 void ARPGPlayerController::ShowDamageNumber_Implementation(float DamageAmount, ACharacter* TargetCharacter, bool bBlockedHit, bool bCriticalHit)
@@ -55,6 +79,14 @@ void ARPGPlayerController::AutoRun()
 		{
 			bAutoRunning = false;
 		}
+	}
+}
+
+void ARPGPlayerController::UpdateMagicCircleLocation()
+{
+	if (IsValid(MagicCircle))
+	{
+		MagicCircle->SetActorLocation(CursorHit.ImpactPoint);
 	}
 }
 
@@ -131,7 +163,8 @@ void ARPGPlayerController::CursorTrace()
 		ThisActor = nullptr;
 		return;
 	}
-	GetHitResultUnderCursor(ECC_Visibility, false, CursorHit);
+	const ECollisionChannel TraceChannel = IsValid(MagicCircle) ? ECC_ExcludePlayers : ECC_Visibility;
+	GetHitResultUnderCursor(TraceChannel, false, CursorHit);
 	if (!CursorHit.bBlockingHit) return;
 
 	LastActor = ThisActor;

@@ -139,6 +139,24 @@ void ARPGCharacter::LevelUp_Implementation()
 	MulticastLevelUpParticles();
 }
 
+void ARPGCharacter::ShowMagicCircle_Implementation(UMaterialInterface* DecalMaterial)
+{
+	if (ARPGPlayerController* RPGPlayerController = Cast<ARPGPlayerController>(GetController()))
+	{
+		RPGPlayerController->ShowMagicCircle(DecalMaterial);
+		RPGPlayerController->bShowMouseCursor = false;
+	}
+}
+
+void ARPGCharacter::HideMagicCircle_Implementation()
+{
+	if (ARPGPlayerController* RPGPlayerController = Cast<ARPGPlayerController>(GetController()))
+	{
+		RPGPlayerController->HideMagicCircle();
+		RPGPlayerController->bShowMouseCursor = true;
+	}
+}
+
 void ARPGCharacter::MulticastLevelUpParticles_Implementation() const
 {
 	if (IsValid(LevelUpNiagaraComponent))
