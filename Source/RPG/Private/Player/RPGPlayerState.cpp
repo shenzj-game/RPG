@@ -36,7 +36,7 @@ UAbilitySystemComponent* ARPGPlayerState::GetAbilitySystemComponent() const
 void ARPGPlayerState::AddToLevel(int32 InLevel)
 {
 	Level += InLevel;
-	OnLevelChangedDelegate.Broadcast(Level);
+	OnLevelChangedDelegate.Broadcast(Level, true);
 }
 
 void ARPGPlayerState::AddToXP(int32 InXP)
@@ -60,7 +60,7 @@ void ARPGPlayerState::AddToSpellPoints(int32 InSpellPoints)
 void ARPGPlayerState::SetLevel(int32 InLevel)
 {
 	Level = InLevel;
-	OnLevelChangedDelegate.Broadcast(Level);
+	OnLevelChangedDelegate.Broadcast(Level, false);
 }
 
 void ARPGPlayerState::SetXP(int32 InXP)
@@ -69,9 +69,21 @@ void ARPGPlayerState::SetXP(int32 InXP)
 	OnXPChangedDelegate.Broadcast(XP);
 }
 
+void ARPGPlayerState::SetAttributePoints(int32 InAttributePoints)
+{
+	AttributePoints = InAttributePoints;
+	OnAttributePointsChangedDelegate.Broadcast(AttributePoints);
+}
+
+void ARPGPlayerState::SetSpellPoints(int32 InSpellPoints)
+{
+	SpellPoints = InSpellPoints;
+	OnSpellPointsChangedDelegate.Broadcast(SpellPoints);
+}
+
 void ARPGPlayerState::OnRep_Level(int32 OldLevel)
 {
-	OnLevelChangedDelegate.Broadcast(Level);
+	OnLevelChangedDelegate.Broadcast(Level, true);
 }
 
 void ARPGPlayerState::OnRep_XP(int32 OldXP)

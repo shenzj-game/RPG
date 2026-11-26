@@ -9,11 +9,18 @@
 #include "Player/RPGPlayerController.h"
 #include "UI/HUD/RPGHUD.h"
 #include "AbilitySystem/RPGAbilitySystemComponent.h"
+#include "AbilitySystem/RPGAbilitySystemLibrary.h"
+#include "AbilitySystem/RPGAttributeSet.h"
+#include "AbilitySystem/Data/AbilityInfo.h"
 #include "AbilitySystem/Data/LevelUpInfo.h"
 #include "AbilitySystem/Debuff/DebuffNiagaraComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Game/LoadScreenSaveGame.h"
+#include "Game/RPGGameInstance.h"
+#include "Game/RPGGameModeBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ARPGCharacter::ARPGCharacter()
 {
@@ -48,7 +55,44 @@ void ARPGCharacter::PossessedBy(AController* NewController)
 
 	// Init ability actor info for the Server
 	InitAbilityActorInfo();
-	AddCharacterAbilities();
+	LoadProgress();
+	
+	if (ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(this)))
+	{
+		RPGGameMode->LoadWorldState(GetWorld());
+	}
+}
+
+void ARPGCharacter::LoadProgress()
+{
+	ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if (RPGGameMode)
+	{
+		ULoadScreenSaveGame* SaveData = RPGGameMode->RetrieveGameSaveData();
+		if (SaveData == nullptr) return;
+		
+		if (SaveData->bFirstTimeLoadIn)
+		{
+			InitializeDefaultAttributes();
+			AddCharacterAbilities();
+		}
+		else
+		{
+			if (URPGAbilitySystemComponent* RPGASC = Cast<URPGAbilitySystemComponent>(AbilitySystemComponent))
+			{
+				RPGASC->AddCharacterAbilitiesFromSaveData(SaveData);
+			}
+		
+			if (ARPGPlayerState* RPGPlayerState = Cast<ARPGPlayerState>(GetPlayerState()))
+			{
+				RPGPlayerState->SetLevel(SaveData->PlayerLevel);
+				RPGPlayerState->SetXP(SaveData->XP);
+				RPGPlayerState->SetAttributePoints(SaveData->AttributePoints);
+				RPGPlayerState->SetSpellPoints(SaveData->SpellPoints);
+			}
+			URPGAbilitySystemLibrary::InitializeDefaultAttributesFromSaveData(this, AbilitySystemComponent, SaveData);
+		}
+	}
 }
 
 void ARPGCharacter::OnRep_PlayerState()
@@ -157,6 +201,59 @@ void ARPGCharacter::HideMagicCircle_Implementation()
 	}
 }
 
+void ARPGCharacter::SaveProgress_Implementation(const FName& CheckpointTag)
+{
+	ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(this));
+	if (RPGGameMode)
+	{
+		ULoadScreenSaveGame* SaveData = RPGGameMode->RetrieveGameSaveData();
+		if (SaveData == nullptr) return;
+		
+		SaveData->PlayerStartTag = CheckpointTag;
+		
+		if (ARPGPlayerState* RPGPlayerState = Cast<ARPGPlayerState>(GetPlayerState()))
+		{
+			SaveData->PlayerLevel = RPGPlayerState->GetPlayerLevel();
+			SaveData->XP = RPGPlayerState->GetXP();
+			SaveData->AttributePoints = RPGPlayerState->GetAttributePoints();
+			SaveData->SpellPoints = RPGPlayerState->GetSpellPoints();
+		}
+		SaveData->Strength = URPGAttributeSet::GetStrengthAttribute().GetNumericValue(GetAttributeSet());
+		SaveData->Intelligence = URPGAttributeSet::GetIntelligenceAttribute().GetNumericValue(GetAttributeSet());
+		SaveData->Resilience = URPGAttributeSet::GetResilienceAttribute().GetNumericValue(GetAttributeSet());
+		SaveData->Vigor = URPGAttributeSet::GetVigorAttribute().GetNumericValue(GetAttributeSet());
+		
+		SaveData->bFirstTimeLoadIn = false;
+		
+		if (!HasAuthority()) return;
+		
+		URPGAbilitySystemComponent* RPGASC = Cast<URPGAbilitySystemComponent>(AbilitySystemComponent);
+		FForEachAbility SaveAbilityDelegate;
+		SaveData->SavedAbilities.Empty();
+		SaveAbilityDelegate.BindLambda(
+			[this, RPGASC, SaveData](const FGameplayAbilitySpec& AbilitySpec)
+			{
+				const FGameplayTag AbilityTag = RPGASC->GetAbilityTagFromSpec(AbilitySpec);
+				UAbilityInfo* AbilityInfo = URPGAbilitySystemLibrary::GetAbilityInfo(this);
+				FRPGAbilityInfo Info = AbilityInfo->FindAbilityInfoByTag(AbilityTag);
+				
+				FSavedAbility SavedAbility;
+				SavedAbility.GameplayAbility = Info.Ability;
+				SavedAbility.AbilityLevel = AbilitySpec.Level;
+				SavedAbility.AbilitySlot = RPGASC->GetSlotFromAbilityTag(AbilityTag);
+				SavedAbility.AbilityStatus = RPGASC->GetStatusFromAbilityTag(AbilityTag);
+				SavedAbility.AbilityTag = AbilityTag;
+				SavedAbility.AbilityType = Info.AbilityType;
+				
+				SaveData->SavedAbilities.AddUnique(SavedAbility);
+			}
+		);
+		RPGASC->ForEachAbility(SaveAbilityDelegate);
+		
+		RPGGameMode->SaveInGameProgressData(SaveData);
+	}
+}
+
 void ARPGCharacter::MulticastLevelUpParticles_Implementation() const
 {
 	if (IsValid(LevelUpNiagaraComponent))
@@ -231,5 +328,4 @@ void ARPGCharacter::InitAbilityActorInfo()
 			RPGHUD->InitOverlay(RPGPlayerController, RPGPlayerState, AbilitySystemComponent, AttributeSet);
 		}
 	}
-	InitializeDefaultAttributes();
 }
