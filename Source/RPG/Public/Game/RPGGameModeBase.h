@@ -33,7 +33,7 @@ public:
 	void SaveInGameProgressData(ULoadScreenSaveGame* SaveObject);
 	
 	void SaveWorldState(UWorld* World) const;
-	void ARPGGameModeBase::LoadWorldState(UWorld* World) const;
+	void LoadWorldState(UWorld* World) const;
 	
 	void TravelToMap(UMVVM_LoadSlot* Slot);
 	
