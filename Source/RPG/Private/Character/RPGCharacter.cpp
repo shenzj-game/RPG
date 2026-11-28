@@ -16,7 +16,6 @@
 #include "AbilitySystem/Debuff/DebuffNiagaraComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Game/LoadScreenSaveGame.h"
-#include "Game/RPGGameInstance.h"
 #include "Game/RPGGameModeBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -68,7 +67,7 @@ void ARPGCharacter::LoadProgress()
 	ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(this));
 	if (RPGGameMode)
 	{
-		ULoadScreenSaveGame* SaveData = RPGGameMode->RetrieveGameSaveData();
+		ULoadScreenSaveGame* SaveData = RPGGameMode->RetrieveInGameSaveData();
 		if (SaveData == nullptr) return;
 		
 		if (SaveData->bFirstTimeLoadIn)
@@ -206,7 +205,7 @@ void ARPGCharacter::SaveProgress_Implementation(const FName& CheckpointTag)
 	ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(this));
 	if (RPGGameMode)
 	{
-		ULoadScreenSaveGame* SaveData = RPGGameMode->RetrieveGameSaveData();
+		ULoadScreenSaveGame* SaveData = RPGGameMode->RetrieveInGameSaveData();
 		if (SaveData == nullptr) return;
 		
 		SaveData->PlayerStartTag = CheckpointTag;
@@ -272,6 +271,25 @@ int32 ARPGCharacter::GetPlayerLevel_Implementation()
 	const ARPGPlayerState* RPGPlayerState = GetPlayerState<ARPGPlayerState>();
 	check(RPGPlayerState);
 	return RPGPlayerState->GetPlayerLevel();
+}
+
+void ARPGCharacter::Die(const FVector& DeathImpulse)
+{
+	Super::Die(DeathImpulse);
+	
+	FTimerDelegate DeathTimerDelegate;
+	DeathTimerDelegate.BindLambda(
+		[this]()
+		{
+			ARPGGameModeBase* RPGGameMode = Cast<ARPGGameModeBase>(UGameplayStatics::GetGameMode(this));
+			if (RPGGameMode)
+			{
+				RPGGameMode->PlayerDied(this);
+			}
+		}
+	);
+	GetWorldTimerManager().SetTimer(DeathTimer, DeathTimerDelegate, DeathTime, false);
+	TopDownCameraComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 }
 
 void ARPGCharacter::OnRep_Stunned()

@@ -6,6 +6,7 @@
 #include "EngineUtils.h"
 #include "Game/LoadScreenSaveGame.h"
 #include "Game/RPGGameInstance.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/PlayerStart.h"
 #include "Interaction/SaveInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -18,9 +19,10 @@ void ARPGGameModeBase::SaveSlotData(UMVVM_LoadSlot* LoadSlot, int32 SlotIndex)
 	DeleteSlot(LoadSlot->GetLoadSlotName(), SlotIndex);
 	USaveGame* SaveGameObject = UGameplayStatics::CreateSaveGameObject(LoadScreenSaveGameClass);
 	ULoadScreenSaveGame* LoadScreenSaveGame =  Cast<ULoadScreenSaveGame>(SaveGameObject);
-	LoadScreenSaveGame->PlayerName = LoadSlot->GetLoadSlotName();
+	LoadScreenSaveGame->PlayerName = LoadSlot->GetPlayerName();
 	LoadScreenSaveGame->SaveSlotStatus = Taken;
 	LoadScreenSaveGame->MapName = LoadSlot->GetMapName();
+	LoadScreenSaveGame->MapAssetName = LoadSlot->MapAssetName;
 	LoadScreenSaveGame->PlayerStartTag = LoadSlot->PlayerStartTag;
 	
 	UGameplayStatics::SaveGameToSlot(LoadScreenSaveGame, LoadSlot->GetLoadSlotName(), SlotIndex);
@@ -49,7 +51,7 @@ void ARPGGameModeBase::DeleteSlot(const FString& SlotName, int32 SlotIndex)
 	}
 }
 
-ULoadScreenSaveGame* ARPGGameModeBase::RetrieveGameSaveData()
+ULoadScreenSaveGame* ARPGGameModeBase::RetrieveInGameSaveData()
 {
 	URPGGameInstance* RPGGameInstance = Cast<URPGGameInstance>(GetGameInstance());
 	
@@ -70,7 +72,7 @@ void ARPGGameModeBase::SaveInGameProgressData(ULoadScreenSaveGame* SaveObject)
 	UGameplayStatics::SaveGameToSlot(SaveObject, InGameLoadSlotName, InGameLoadSlotIndex);
 }
 
-void ARPGGameModeBase::SaveWorldState(UWorld* World) const
+void ARPGGameModeBase::SaveWorldState(UWorld* World, const FString& DestinationMapAssetName) const
 {
 	FString WorldName = World->GetMapName();
 	WorldName.RemoveFromStart(World->StreamingLevelsPrefix);
@@ -80,6 +82,13 @@ void ARPGGameModeBase::SaveWorldState(UWorld* World) const
 
 	if (ULoadScreenSaveGame* SaveGame = GetSaveSlotData(RPGGI->LoadSlotName, RPGGI->LoadSlotIndex))
 	{
+		if (DestinationMapAssetName != FString(""))
+		{
+			SaveGame->MapAssetName = DestinationMapAssetName;
+			SaveGame->MapName = GetMapNameFromMapAssetName(DestinationMapAssetName);
+			
+		}
+		
 		if (!SaveGame->HasMap(WorldName))
 		{
 			FSavedMap NewSavedMap;
@@ -175,6 +184,18 @@ void ARPGGameModeBase::TravelToMap(UMVVM_LoadSlot* Slot)
 	UGameplayStatics::OpenLevelBySoftObjectPtr(Slot, Maps.FindChecked(Slot->GetMapName()));
 }
 
+FString ARPGGameModeBase::GetMapNameFromMapAssetName(const FString& MapAssetName) const
+{
+	for (auto& Map : Maps)
+	{
+		if (Map.Value.ToSoftObjectPath().GetAssetName() == MapAssetName)
+		{
+			return Map.Key;
+		}
+	}
+	return FString();
+}
+
 AActor* ARPGGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
 {
 	URPGGameInstance* RPGGameInstance = Cast<URPGGameInstance>(GetGameInstance());
@@ -198,6 +219,14 @@ AActor* ARPGGameModeBase::ChoosePlayerStart_Implementation(AController* Player)
 		return SelectedActor;
 	}
 	return nullptr;
+}
+
+void ARPGGameModeBase::PlayerDied(ACharacter* DeadCharacter)
+{
+	ULoadScreenSaveGame* SaveGame = RetrieveInGameSaveData();
+	if (!IsValid(SaveGame)) return;
+	
+	UGameplayStatics::OpenLevel(DeadCharacter, FName(SaveGame->MapAssetName));
 }
 
 void ARPGGameModeBase::BeginPlay()

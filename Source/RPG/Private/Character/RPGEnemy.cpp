@@ -19,10 +19,7 @@
 ARPGEnemy::ARPGEnemy()
 {
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-
-	GetMesh()->SetCustomDepthStencilValue(CUSTOM_DEPTH_RED);
-	Weapon->SetCustomDepthStencilValue(CUSTOM_DEPTH_RED);
-
+	
 	AbilitySystemComponent = CreateDefaultSubobject<URPGAbilitySystemComponent>("AbilitySystemComponent");
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
@@ -36,6 +33,11 @@ ARPGEnemy::ARPGEnemy()
 	
 	HealthBar = CreateDefaultSubobject<UWidgetComponent>("HealthBar");
 	HealthBar->SetupAttachment(GetRootComponent());
+	
+	GetMesh()->SetCustomDepthStencilValue(CUSTOM_DEPTH_RED);
+	GetMesh()->MarkRenderStateDirty();
+	Weapon->SetCustomDepthStencilValue(CUSTOM_DEPTH_RED);
+	Weapon->MarkRenderStateDirty();
 	
 	BaseWalkSpeed = 250.f;
 }
@@ -53,16 +55,21 @@ void ARPGEnemy::PossessedBy(AController* NewController)
 
 }
 
-void ARPGEnemy::HighlightActor()
+void ARPGEnemy::HighlightActor_Implementation()
 {
 	GetMesh()->SetRenderCustomDepth(true);
 	Weapon->SetRenderCustomDepth(true);
 }
 
-void ARPGEnemy::UnHighlightActor()
+void ARPGEnemy::UnHighlightActor_Implementation()
 {
 	GetMesh()->SetRenderCustomDepth(false);
 	Weapon->SetRenderCustomDepth(false);
+}
+
+void ARPGEnemy::SetMoveToLocation_Implementation(FVector& OutDestination)
+{
+
 }
 
 int32 ARPGEnemy::GetPlayerLevel_Implementation()
@@ -74,6 +81,7 @@ void ARPGEnemy::Die(const FVector& DeathImpulse)
 {
 	SetLifeSpan(LifeSpan);
 	if (RPGAIController) RPGAIController->GetBlackboardComponent()->SetValueAsBool(FName("Dead"), true);
+	SpawnLoot();
 	Super::Die(DeathImpulse);
 }
 

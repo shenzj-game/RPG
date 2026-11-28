@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "Character/RPGCharacterBase.h"
 #include "Interaction/EnemyInterface.h"
+#include "Interaction/HighlightInterface.h"
 #include "UI/WidgetController/OverlayWidgetController.h"
-#include  "AbilitySystem/Data/CharacterClassInfo.h"
 #include "RPGEnemy.generated.h"
 
 class ARPGAIController;
@@ -17,17 +17,18 @@ class UWidgetComponent;
  * 
  */
 UCLASS()
-class RPG_API ARPGEnemy : public ARPGCharacterBase, public IEnemyInterface
+class RPG_API ARPGEnemy : public ARPGCharacterBase, public IEnemyInterface, public IHighlightInterface
 {
 	GENERATED_BODY()
 public:
 	ARPGEnemy();
 	virtual void PossessedBy(AController* NewController) override;
 
-	/** Enemy Interface */
-	virtual void HighlightActor() override;
-	virtual void UnHighlightActor() override;
-	/** end Enemy Interface */
+	/** Highlight Interface */
+	virtual void HighlightActor_Implementation() override;
+	virtual void UnHighlightActor_Implementation() override;
+	virtual void SetMoveToLocation_Implementation(FVector& OutDestination) override;
+	/** end Highlight Interface */
 
 	/** Combat Interface */
 	virtual int32 GetPlayerLevel_Implementation() override;
@@ -53,6 +54,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category="Combat")
 	TObjectPtr<AActor> CombatTarget;
 	
+	void SetLevel(int32 InLevel) { Level = InLevel; };
 protected:
 	virtual void BeginPlay() override;
 	virtual void InitAbilityActorInfo() override;
@@ -70,4 +72,7 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<ARPGAIController> RPGAIController;
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	void SpawnLoot();
 };
